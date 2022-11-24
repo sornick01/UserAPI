@@ -31,7 +31,6 @@ func NewJsonRepo(filename string) *JsonRepo {
 	}
 }
 
-//TODO: empty json file, error managment, code repeating
 func (j *JsonRepo) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
