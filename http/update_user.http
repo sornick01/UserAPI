@@ -2,7 +2,7 @@ PATCH http://localhost:3333/api/v1/users/10
 Content-Type: application/json
 
 {
-  "display_name": "abc"
+  "display_name": "NewName"
 }
 
 ###

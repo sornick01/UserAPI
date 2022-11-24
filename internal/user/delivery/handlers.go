@@ -59,7 +59,7 @@ func (h *Handlers) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render.Status(r, http.StatusNoContent) //TODO: why?
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handlers) GetUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +91,7 @@ func (h *Handlers) SearchUsersHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	req := UpdateRequest{}
 	if err := render.Bind(r, &req); err != nil {
-		_ = render.Render(w, r, ErrInvalidRequest(err))
+		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
@@ -99,14 +99,14 @@ func (h *Handlers) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	err := h.useCase.UpdateUser(r.Context(), id, req.DisplayName)
 	if err != nil {
 		if err == user.ErrUserNotFound {
-			_ = render.Render(w, r, ErrInvalidRequest(err))
+			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
-		_ = render.Render(w, r, ErrInternalServ(err))
+		render.Render(w, r, ErrInternalServ(err))
 		return
 	}
 
-	render.Status(r, http.StatusNoContent) //TODO: why?
+	w.WriteHeader(http.StatusNoContent)
 }
 
 //TODO:move
