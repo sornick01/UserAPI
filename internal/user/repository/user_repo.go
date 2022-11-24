@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"github.com/sornick01/UserAPI/internal/user"
 	"github.com/sornick01/UserAPI/models"
-	"io"
 	"io/fs"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"sync"
-	"time"
 )
 
 type (
@@ -23,81 +20,52 @@ type (
 	}
 )
 type JsonRepo struct {
-	//Increment int `json:"increment"`
-	mutex *sync.Mutex
-	//Users     map[string]*models.User `json:"users"`
+	mutex    *sync.Mutex
 	filename string
-}
-
-func NewUserStore() *UserStore {
-
 }
 
 func NewJsonRepo(filename string) *JsonRepo {
 	return &JsonRepo{
-		mutex: new(sync.Mutex),
-		//Users:    make(map[string]*models.User),
+		mutex:    new(sync.Mutex),
 		filename: filename,
 	}
 }
 
+//TODO: empty json file, error managment, code repeating
 func (j *JsonRepo) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	j.mutex.Lock()
-	defer j.mutex.Unlock() //TODO: need?
-	file, err := os.Open(j.filename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+	defer j.mutex.Unlock()
 
-	//err := readFromFile(j.filename, j) //TODO: empty file err
-	//if err != nil {
-	//	return "", err
-	//}
-	//
-	//j.Increment++
-	//id := strconv.Itoa(j.Increment)
-	//user.CreatedAt = time.Now()
-	//j.Users[id] = user
-	//
-	//err = writeToFile(j.filename, j)
-	//if err != nil {
-	//	return "", err
-	//}
-	//
-	//return id, nil
+	f, _ := ioutil.ReadFile(j.filename)
+	us := UserStore{}
+	_ = json.Unmarshal(f, &us)
 
-	userStore, err := userStoreFromFile(j.filename)
-	if err != nil {
-		return "", err
-	}
+	us.Increment++
+	id := strconv.Itoa(us.Increment)
+	us.List[id] = user
 
-	userStore.Increment++
-	id := strconv.Itoa(userStore.Increment)
-	user.CreatedAt = time.Now()
-	userStore.List[id] = user
+	f, _ = json.Marshal(us)
+	ioutil.WriteFile(j.filename, f, fs.ModePerm)
 
+	return id, nil
 }
 
 func (j *JsonRepo) DeleteUser(ctx context.Context, userId string) error {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	err := readFromFile(j.filename, j)
-	if err != nil {
-		return err
-	}
+	f, _ := ioutil.ReadFile(j.filename)
+	us := UserStore{}
+	_ = json.Unmarshal(f, &us)
 
-	if _, ok := j.Users[userId]; !ok {
+	if _, ok := us.List[userId]; !ok {
 		return user.ErrUserNotFound
 	}
 
-	delete(j.Users, userId)
+	delete(us.List, userId)
 
-	err = writeToFile(j.filename, j)
-	if err != nil {
-		return err
-	}
+	f, _ = json.Marshal(us)
+	ioutil.WriteFile(j.filename, f, fs.ModePerm)
 
 	return nil
 }
@@ -106,95 +74,45 @@ func (j *JsonRepo) GetUser(ctx context.Context, userId string) (*models.User, er
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	err := readFromFile(j.filename, j)
-	if err != nil {
-		return nil, err
-	}
+	f, _ := ioutil.ReadFile(j.filename)
+	us := UserStore{}
+	_ = json.Unmarshal(f, &us)
 
-	if _, ok := j.Users[userId]; !ok {
+	if _, ok := us.List[userId]; !ok {
 		return nil, user.ErrUserNotFound
 	}
 
-	return j.Users[userId], nil
+	return us.List[userId], nil
 }
 
 func (j *JsonRepo) SearchUser(ctx context.Context) (map[string]*models.User, error) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	err := readFromFile(j.filename, j)
-	if err != nil {
-		return nil, err
-	}
+	f, _ := ioutil.ReadFile(j.filename)
+	us := UserStore{}
+	_ = json.Unmarshal(f, &us)
 
-	return j.Users, nil
+	return us.List, nil
 }
 
-func (j *JsonRepo) UpdateUser(ctx context.Context, userId, newDisplayName string) error {
+func (j *JsonRepo) UpdateUser(ctx context.Context, userId, newName string) error {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	err := readFromFile(j.filename, j)
-	if err != nil {
-		return err
-	}
+	f, _ := ioutil.ReadFile(j.filename)
+	us := UserStore{}
+	_ = json.Unmarshal(f, &us)
 
-	if _, ok := j.Users[userId]; !ok {
+	if _, ok := us.List[userId]; !ok {
 		return user.ErrUserNotFound
 	}
 
-	u := j.Users[userId]
-	u.DisplayName = newDisplayName
+	u := us.List[userId]
+	u.DisplayName = newName
 
-	err = writeToFile(j.filename, j)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func readFromFile(filename string, repo *JsonRepo) error {
-	f, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(f, repo)
-	if err != nil {
-		return err
-	}
+	f, _ = json.Marshal(us)
+	ioutil.WriteFile(j.filename, f, fs.ModePerm)
 
 	return nil
-}
-
-func writeToFile(filename string, repo *JsonRepo) error {
-	f, err := json.Marshal(repo)
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(filename, f, fs.ModePerm)
-}
-
-func userStoreFromFile(file *os.File) (*UserStore, error) {
-	f, err := io.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	userStore := new(UserStore)
-	if len(f) == 0 {
-		userStore.List = make(UserList)
-	} else {
-		err = json.Unmarshal(f, userStore)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return userStore, nil
-}
-
-func userStoreToFile(file *os.File, userStore *UserStore) error {
-	f, err := json.Marshal(us)
 }
