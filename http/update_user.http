@@ -1,4 +1,4 @@
-PATCH http://localhost:3333/api/v1/users/10
+PATCH http://localhost:3333/api/v1/users/1
 Content-Type: application/json
 
 {

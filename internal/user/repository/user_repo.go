@@ -36,16 +36,32 @@ func (j *JsonRepo) CreateUser(ctx context.Context, user *models.User) (string, e
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	f, _ := ioutil.ReadFile(j.filename)
+	f, err := ioutil.ReadFile(j.filename)
+	if err != nil {
+		return "", err
+	}
+
 	us := UserStore{}
-	_ = json.Unmarshal(f, &us)
+
+	if string(f) == "" {
+		us.List = make(UserList)
+	} else {
+		if err = json.Unmarshal(f, &us); err != nil {
+			return "", err
+		}
+	}
 
 	us.Increment++
 	id := strconv.Itoa(us.Increment)
 	us.List[id] = user
 
-	f, _ = json.Marshal(us)
-	ioutil.WriteFile(j.filename, f, fs.ModePerm)
+	if f, err = json.Marshal(us); err != nil {
+		return "", err
+	}
+
+	if err = ioutil.WriteFile(j.filename, f, fs.ModePerm); err != nil {
+		return "", err
+	}
 
 	return id, nil
 }
@@ -54,9 +70,20 @@ func (j *JsonRepo) DeleteUser(ctx context.Context, userId string) error {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	f, _ := ioutil.ReadFile(j.filename)
+	f, err := ioutil.ReadFile(j.filename)
+	if err != nil {
+		return err
+	}
+
 	us := UserStore{}
-	_ = json.Unmarshal(f, &us)
+
+	if string(f) == "" {
+		return user.ErrUserNotFound
+	} else {
+		if err = json.Unmarshal(f, &us); err != nil {
+			return err
+		}
+	}
 
 	if _, ok := us.List[userId]; !ok {
 		return user.ErrUserNotFound
@@ -64,8 +91,13 @@ func (j *JsonRepo) DeleteUser(ctx context.Context, userId string) error {
 
 	delete(us.List, userId)
 
-	f, _ = json.Marshal(us)
-	ioutil.WriteFile(j.filename, f, fs.ModePerm)
+	if f, err = json.Marshal(us); err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(j.filename, f, fs.ModePerm); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -74,9 +106,20 @@ func (j *JsonRepo) GetUser(ctx context.Context, userId string) (*models.User, er
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	f, _ := ioutil.ReadFile(j.filename)
+	f, err := ioutil.ReadFile(j.filename)
+	if err != nil {
+		return nil, err
+	}
+
 	us := UserStore{}
-	_ = json.Unmarshal(f, &us)
+
+	if string(f) == "" {
+		us.List = make(UserList)
+	} else {
+		if err = json.Unmarshal(f, &us); err != nil {
+			return nil, err
+		}
+	}
 
 	if _, ok := us.List[userId]; !ok {
 		return nil, user.ErrUserNotFound
@@ -89,9 +132,20 @@ func (j *JsonRepo) SearchUser(ctx context.Context) (map[string]*models.User, err
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	f, _ := ioutil.ReadFile(j.filename)
+	f, err := ioutil.ReadFile(j.filename)
+	if err != nil {
+		return nil, err
+	}
+
 	us := UserStore{}
-	_ = json.Unmarshal(f, &us)
+
+	if string(f) == "" {
+		us.List = make(UserList)
+	} else {
+		if err = json.Unmarshal(f, &us); err != nil {
+			return nil, err
+		}
+	}
 
 	return us.List, nil
 }
@@ -100,19 +154,34 @@ func (j *JsonRepo) UpdateUser(ctx context.Context, userId, newName string) error
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 
-	f, _ := ioutil.ReadFile(j.filename)
+	f, err := ioutil.ReadFile(j.filename)
+	if err != nil {
+		return err
+	}
+
+	if string(f) == "" {
+		return user.ErrUserNotFound
+	}
+
 	us := UserStore{}
-	_ = json.Unmarshal(f, &us)
+	err = json.Unmarshal(f, &us)
+	if err != nil {
+		return err
+	}
 
 	if _, ok := us.List[userId]; !ok {
 		return user.ErrUserNotFound
 	}
 
-	u := us.List[userId]
-	u.DisplayName = newName
+	us.List[userId].DisplayName = newName
 
-	f, _ = json.Marshal(us)
-	ioutil.WriteFile(j.filename, f, fs.ModePerm)
+	if f, err = json.Marshal(us); err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(j.filename, f, fs.ModePerm); err != nil {
+		return err
+	}
 
 	return nil
 }
