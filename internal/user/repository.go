@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"github.com/sornick01/UserAPI/models"
+	"github.com/sornick01/UserAPI/internal/models"
 )
 
 type Repo interface {

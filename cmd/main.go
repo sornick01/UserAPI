@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sornick01/UserAPI/server"
+	"github.com/sornick01/UserAPI/internal/server"
 	"log"
 )
 

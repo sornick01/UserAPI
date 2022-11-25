@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
+	"github.com/sornick01/UserAPI/internal/models"
 	"github.com/sornick01/UserAPI/internal/user"
-	"github.com/sornick01/UserAPI/models"
 	"time"
 )
 

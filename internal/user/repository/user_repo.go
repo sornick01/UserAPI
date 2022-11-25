@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"github.com/sornick01/UserAPI/internal/models"
 	"github.com/sornick01/UserAPI/internal/user"
-	"github.com/sornick01/UserAPI/models"
 	"io/fs"
 	"io/ioutil"
 	"strconv"
